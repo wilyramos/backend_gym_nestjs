@@ -15,7 +15,6 @@ export enum PaymentStatus {
     CANCELLED = 'CANCELLED',   // Pago cancelado por usuario o admin
 }
 
-
 @Entity('payments')
 export class Payment {
     @PrimaryGeneratedColumn()
