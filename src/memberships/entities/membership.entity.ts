@@ -1,32 +1,47 @@
-
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Payment } from '../../payments/entities/payment.entity';
 
-@Entity('memberships')
-export class Membership {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @ManyToOne(() => User, user => user.memberships)
-  user: User;
-
-  @Column({ type: 'varchar' })
-  type: string; // mensual, trimestral, anual
-
-  @Column({ type: 'decimal' })
-  price: number;
-
-  @Column({ type: 'timestamp' })
-  startDate: Date;
-
-  @Column({ type: 'timestamp' })
-  endDate: Date;
-
-  @Column({ type: 'enum', enum: ['ACTIVE','EXPIRED','CANCELLED'], default: 'ACTIVE' })
-  status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
-
-  @OneToMany(() => Payment, payment => payment.membership)
-  payments: Payment[];
+export enum MembershipStatus {
+    ACTIVE = 'ACTIVE',
+    PENDING = 'PENDING',
+    EXPIRED = 'EXPIRED',
+    CANCELLED = 'CANCELLED',
 }
 
+export enum MembershipType {
+    MONTHLY = 'MONTHLY',
+    QUARTERLY = 'QUARTERLY',
+    ANNUAL = 'ANNUAL',
+}
+
+@Entity('memberships')
+export class Membership {
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column({ type: 'enum', enum: MembershipType })
+    type: MembershipType;
+
+    @Column({ type: 'decimal', precision: 10, scale: 2 })
+    price: number;
+
+    @Column({ type: 'timestamp', nullable: true })
+    startDate?: Date;
+
+    @Column({ type: 'timestamp', nullable: true })
+    endDate?: Date;
+
+    @Column({ type: 'enum', enum: MembershipStatus, default: MembershipStatus.PENDING })
+    status: MembershipStatus;
+
+    @ManyToOne(() => User, user => user.memberships)
+    user: User;
+
+    @OneToOne(() => Payment, payment => payment.membership, { cascade: true, nullable: true })
+    @JoinColumn()
+    payment?: Payment;
+
+    @CreateDateColumn()
+    createdAt: Date;
+}
