@@ -1,10 +1,11 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import type { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import type { QueryUsersDto } from './dto/get-users-query.dto';
 
 @Injectable()
 export class UsersService {
@@ -29,19 +30,45 @@ export class UsersService {
         }
 
         const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-        const user = this.usersRepository.save({ 
-            ...createUserDto, 
-            password: hashedPassword 
+        const user = this.usersRepository.save({
+            ...createUserDto,
+            password: hashedPassword
         });
         return user;
     }
 
-    findAll() {
-        return `This action returns all users`;
+    async findAll(query: QueryUsersDto) {
+        const { page = 1, limit = 10, search } = query;
+        const skip = (page - 1) * limit;
+
+        const qb = this.usersRepository.createQueryBuilder('user')
+            .skip(skip)
+            .take(limit);
+
+        if (search) {
+            qb.where('user.name ILIKE :search OR user.email ILIKE :search', { search: `%${search}%` });
+        }
+
+        const [users, total] = await qb.getManyAndCount();
+
+        return {
+            data: users,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 
-    findOne(id: number) {
-        return `This action returns a #${id} user`;
+    async findOne(id: number) {
+        const user = await this.usersRepository.findOne({
+            where: { id },
+        })
+
+        if (!user) {
+            throw new NotFoundException(`User with id ${id} not found`);
+        }
+        return user;
     }
 
     update(id: number, updateUserDto: UpdateUserDto) {
@@ -50,5 +77,18 @@ export class UsersService {
 
     remove(id: number) {
         return `This action removes a #${id} user`;
+    }
+
+    async findByEmail(email: string, withPassword = false) {
+        const user = await this.usersRepository.findOne({
+            where: { email },
+            select: withPassword ? ['id', 'name', 'email', 'password', 'role'] : ['id', 'name', 'email', 'role'],
+        });
+
+        if (!user) {
+            throw new NotFoundException(`User with email ${email} not found`);
+        }
+
+        return user;
     }
 }

@@ -1,5 +1,7 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Membership } from '../../memberships/entities/membership.entity';
+import { Payment } from '../../payments/entities/payment.entity';
+import { Routine } from '../../routines/entities/routine.entity';
 
 @Entity('users')
 export class User {
@@ -24,4 +26,19 @@ export class User {
     @Column({ type: 'varchar', nullable: true })
     phone?: string;
 
+    // Historial de membresías
+    @OneToMany(() => Membership, membership => membership.user)
+    memberships: Membership[];
+
+    // Pagos realizados
+    @OneToMany(() => Payment, payment => payment.user)
+    payments: Payment[];
+
+    // Rutinas asignadas (solo clientes)
+    @OneToMany(() => Routine, routine => routine.client)
+    routines: Routine[];
+
+    // Rutinas creadas por trainer
+    @OneToMany(() => Routine, routine => routine.trainer)
+    createdRoutines: Routine[];
 }

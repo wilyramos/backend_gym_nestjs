@@ -26,6 +26,7 @@ import { typeOrmConfig } from './config/typeorm.config';
         MembershipsModule,
         AuthModule,
         ExercisesModule,
+        
     ],
     controllers: [AppController],
     providers: [AppService],
