@@ -9,6 +9,7 @@ export class PaymentsController {
 
   @Post()
   create(@Body() createPaymentDto: CreatePaymentDto) {
+
     return this.paymentsService.create(createPaymentDto);
   }
 

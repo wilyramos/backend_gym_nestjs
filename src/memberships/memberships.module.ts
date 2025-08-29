@@ -3,11 +3,17 @@ import { MembershipsService } from './memberships.service';
 import { MembershipsController } from './memberships.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Membership } from './entities/membership.entity';
+import { UsersModule } from '../users/users.module';
+import { Payment } from 'src/payments/entities/payment.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Membership])], //
+  imports: [
+    TypeOrmModule.forFeature([Membership, Payment]),
+    UsersModule,
+    
+  ],
   controllers: [MembershipsController],
   providers: [MembershipsService],
-  exports: [MembershipsService, TypeOrmModule],
+  exports: [MembershipsService],
 })
 export class MembershipsModule {}

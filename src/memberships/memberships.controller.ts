@@ -8,8 +8,10 @@ export class MembershipsController {
   constructor(private readonly membershipsService: MembershipsService) {}
 
   @Post()
-  create(@Body() createMembershipDto: CreateMembershipDto) {
-    return this.membershipsService.create(createMembershipDto);
+  async create(@Body() createMembershipDto: CreateMembershipDto) {
+
+    const membership = await this.membershipsService.create(createMembershipDto);
+    return membership;
   }
 
   @Get()
