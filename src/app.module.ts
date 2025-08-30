@@ -10,6 +10,7 @@ import { MembershipsModule } from './memberships/memberships.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeorm.config';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
     imports: [
@@ -26,6 +27,7 @@ import { typeOrmConfig } from './config/typeorm.config';
         MembershipsModule,
         AuthModule,
         ExercisesModule,
+        SubscriptionsModule,
     ],
     controllers: [AppController],
     providers: [AppService],

@@ -1,18 +1,22 @@
-import { IsNotEmpty } from "class-validator";
-import type { MembershipType } from "../entities/membership.entity";
+// src/memberships/dto/create-membership.dto.ts
+import { IsEnum, IsNotEmpty, IsDateString, IsInt } from 'class-validator';
+import { MembershipStatus } from '../entities/membership.entity';
 
 export class CreateMembershipDto {
-
+    @IsInt()
     @IsNotEmpty()
     userId: number;
 
+    @IsInt()
     @IsNotEmpty()
-    type: MembershipType; // MONTHLY | QUARTERLY | ANNUAL
+    subscriptionId: number;
 
-    @IsNotEmpty()
-    price: number;
+    @IsEnum(MembershipStatus)
+    status?: MembershipStatus;
 
-    startDate?: Date;
-    endDate?: Date;
-    paymentId?: number; // opcional si ya existe un pago
+    @IsDateString()
+    validFrom: Date;
+
+    @IsDateString()
+    validTo: Date;
 }

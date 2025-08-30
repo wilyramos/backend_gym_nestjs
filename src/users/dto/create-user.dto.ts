@@ -1,4 +1,5 @@
-import { IsEmail, IsNumber, IsNumberString, IsOptional, IsString, Length } from "class-validator";
+import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { AuthProvider } from '../entities/user.entity';
 
 export class CreateUserDto {
     @IsString()
@@ -7,9 +8,17 @@ export class CreateUserDto {
     @IsEmail()
     email: string;
 
+    // Solo requerido si el registro es LOCAL
     @IsOptional()
-    @IsString()
+    @MinLength(6)
     password?: string;
 
-   
+    @IsEnum(AuthProvider)
+    @IsOptional() // Por defecto será LOCAL si no se envía
+    provider?: AuthProvider;
+
+    // Solo requerido si el provider es GOOGLE
+    @IsOptional()
+    @IsString()
+    googleId?: string;
 }

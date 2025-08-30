@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
+import { AuthProvider, User } from './entities/user.entity';
 import type { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import type { QueryUsersDto } from './dto/get-users-query.dto';
@@ -13,30 +13,34 @@ export class UsersService {
     constructor(
         @InjectRepository(User)
         private readonly usersRepository: Repository<User>,
-
-        
     ) { }
 
     async create(createUserDto: CreateUserDto) {
 
         // Check if the user already exists by email
-        const existingUser = await this.usersRepository.findOneBy({ email: createUserDto.email });
-        if (existingUser) {
-            throw new ConflictException(`User with email ${createUserDto.email} already exists`);
-        }
-
-        // Has the password before saving
-
-        if (!createUserDto.password) {
-            throw new BadRequestException(`Password is required`);
-        }
-
-        const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-        const user = this.usersRepository.save({
-            ...createUserDto,
-            password: hashedPassword
+        const existingUser = await this.usersRepository.findOneBy({
+            email: createUserDto.email
         });
-        return user;
+        if (existingUser) throw new ConflictException('Email already in use');
+
+        let password: string | null = null;
+
+        if (
+            createUserDto.provider === AuthProvider.LOCAL ||
+            !createUserDto.provider
+        ) {
+            if (!createUserDto.password) {
+                throw new BadRequestException('La contraseña es requerida');
+            }
+            password = await bcrypt.hash(createUserDto.password, 10);
+        }
+
+        const user = this.usersRepository.create({
+            ...createUserDto,
+            password,
+        });
+
+        return await this.usersRepository.save(user);
     }
 
     async findAll(query: QueryUsersDto) {
@@ -73,24 +77,26 @@ export class UsersService {
         return user;
     }
 
-    update(id: number, updateUserDto: UpdateUserDto) {
-        return `This action updates a #${id} user`;
+    async update(id: number, updateUserDto: UpdateUserDto) {
+        const user = await this.findOne(id);
+        Object.assign(user, updateUserDto);
+        return this.usersRepository.save(user);
     }
 
-    remove(id: number) {
-        return `This action removes a #${id} user`;
+    async remove(id: number) {
+        const user = await this.findOne(id);
+        return this.usersRepository.remove(user);
     }
+
 
     async findByEmail(email: string, withPassword = false) {
-        const user = await this.usersRepository.findOne({
-            where: { email },
-            select: withPassword ? ['id', 'name', 'email', 'password', 'role'] : ['id', 'name', 'email', 'role'],
-        });
+  if (withPassword) {
+    return this.usersRepository.findOne({
+      where: { email },
+      select: ['id', 'email', 'password', 'role'], // incluye password
+    });
+  }
+  return this.usersRepository.findOne({ where: { email } });
+}
 
-        if (!user) {
-            throw new NotFoundException(`User with email ${email} not found`);
-        }
-
-        return user;
-    }
 }

@@ -1,18 +1,22 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LocalStrategy } from './strategies/local.strategy';
 import { LoginDto } from './dto/login.dto';
-import { Post } from '@nestjs/common';
-import { Body } from '@nestjs/common';
+import { RegisterDto } from './dto/register.dto';
+
 
 
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
-    @Post('login')
-    async login(@Body() loginDto: LoginDto) {
-        const user = await this.authService.validateUser(loginDto.email, loginDto.password);
-        return this.authService.login(user);
-    }
+  @Post('login')
+  async login(@Body() loginDto: LoginDto) {
+    const user = await this.authService.validateUser(loginDto.email, loginDto.password);
+    return this.authService.login(user);
+  }
+
+  @Post('register')
+  async register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto);
+  }
 }

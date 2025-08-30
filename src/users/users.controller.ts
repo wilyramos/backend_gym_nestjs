@@ -7,35 +7,39 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard.ts';
 
+
 @Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+    constructor(private readonly usersService: UsersService) { }
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
+    @Post()
+    @UseGuards() // No guard, public route
+    create(@Body() createUserDto: CreateUserDto) {
+        return this.usersService.create(createUserDto);
+    }
 
-    return this.usersService.create(createUserDto);
-  }
+    @Get()
+    @Roles('ADMIN')
+    findAll(@Query() query: QueryUsersDto) {
+        return this.usersService.findAll(query);
+    }
 
-  @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  findAll(@Query() query: QueryUsersDto) {
-    return this.usersService.findAll(query);
-  }
+    @Get(':id')
+    @Roles('ADMIN', 'CLIENT')
+    findOne(@Param('id') id: string) {
+        return this.usersService.findOne(+id);
+    }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
+    @Patch(':id')
+    @Roles('ADMIN')
+    update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+        return this.usersService.update(+id, updateUserDto);
+    }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
-  }
+    @Delete(':id')
+    @Roles('ADMIN')
+    remove(@Param('id') id: string) {
+        return this.usersService.remove(+id);
+    }
 }

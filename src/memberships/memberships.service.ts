@@ -1,137 +1,111 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+// src/memberships/memberships.service.ts
+import {
+    Injectable,
+    NotFoundException,
+    ConflictException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Membership, MembershipStatus } from './entities/membership.entity';
 import { CreateMembershipDto } from './dto/create-membership.dto';
 import { UpdateMembershipDto } from './dto/update-membership.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Membership, MembershipStatus, MembershipType } from './entities/membership.entity';
-import { Repository } from 'typeorm';
-import { Payment } from '../payments/entities/payment.entity';
-import { UsersService } from '../users/users.service';
-
+import { QueryMembershipsDto } from './dto/query-memberships.dto';
+import { User } from '../users/entities/user.entity';
+import { Subscription } from '../subscriptions/entities/subscription.entity';
 
 @Injectable()
 export class MembershipsService {
-
     constructor(
         @InjectRepository(Membership)
-        private membershipRepository: Repository<Membership>,
+        private readonly membershipsRepository: Repository<Membership>,
 
-        @InjectRepository(Payment)
-        private paymentRepository: Repository<Payment>,
+        @InjectRepository(User)
+        private readonly usersRepository: Repository<User>,
 
-        private usersService: UsersService,
-
+        @InjectRepository(Subscription)
+        private readonly subscriptionsRepository: Repository<Subscription>,
     ) { }
 
+    async create(dto: CreateMembershipDto): Promise<Membership> {
+        const user = await this.usersRepository.findOne({
+            where: { id: dto.userId },
+        });
+        if (!user) throw new NotFoundException('Usuario no encontrado');
 
-    async create(createMembershipDto: CreateMembershipDto) {
+        const subscription = await this.subscriptionsRepository.findOne({
+            where: { id: dto.subscriptionId },
+        });
+        if (!subscription) throw new NotFoundException('Suscripción no encontrada');
 
-        const { userId, paymentId, ...membershipData } = createMembershipDto;
-
-        const user = await this.usersService.findOne(userId);
-        if (!user) {
-            throw new NotFoundException('User not found');
+        const existingActive = await this.membershipsRepository.findOne({
+            where: { user: { id: dto.userId }, status: MembershipStatus.ACTIVE },
+        });
+        if (existingActive) {
+            throw new ConflictException(
+                'El usuario ya tiene una membresía activa',
+            );
         }
 
-        // Create the membership
-        const membership = this.membershipRepository.create({
-            ...membershipData,
+        const membership = this.membershipsRepository.create({
             user,
-            status: membershipData.startDate ? MembershipStatus.ACTIVE : MembershipStatus.PENDING,
+            subscription,
+            status: dto.status ?? MembershipStatus.ACTIVE,
+            validFrom: dto.validFrom,
+            validTo: dto.validTo,
         });
 
-        // Asoc payment
-        if (paymentId) {
-            const payment = await this.paymentRepository.findOne({ where: { id: paymentId } });
-            if (!payment) throw new NotFoundException('Payment not found');
+        return await this.membershipsRepository.save(membership);
+    }
 
-            membership.payment = payment;
+    async findAll(query: QueryMembershipsDto) {
+        const { page = 1, limit = 10, status, search } = query;
+
+        const qb = this.membershipsRepository
+            .createQueryBuilder('membership')
+            .leftJoinAndSelect('membership.user', 'user')
+            .leftJoinAndSelect('membership.subscription', 'subscription')
+            .skip((page - 1) * limit)
+            .take(limit)
+            .orderBy('membership.id', 'DESC');
+
+        if (status) {
+            qb.andWhere('membership.status = :status', { status });
         }
 
-        return this.membershipRepository.save(membership);
+        if (search) {
+            qb.andWhere(
+                '(user.name ILIKE :search OR user.email ILIKE :search)',
+                { search: `%${search}%` },
+            );
+        }
+
+        const [data, total] = await qb.getManyAndCount();
+
+        return { data, total, page, limit };
     }
 
-    findAll() {
-        return this.membershipRepository.find({
-            relations: ['user', 'payment'],
-            order: { createdAt: 'DESC' },
-        });
-    }
-
-    async findByUser(userId: number) {
-        return this.membershipRepository.find({
-            where: { user: { id: userId } },
-            relations: ['user', 'payment'],
-        });
-    }
-
-    async findOne(id: number) {
-
-        const membership = await this.membershipRepository.findOne({
+    async findOne(id: number): Promise<Membership> {
+        const membership = await this.membershipsRepository.findOne({
             where: { id },
-            relations: ['user', 'payment'],
+            relations: ['user', 'subscription'],
         });
-        if (!membership) throw new NotFoundException('Membership not found');
+
+        if (!membership)
+            throw new NotFoundException(`Membresía con id ${id} no encontrada`);
+
         return membership;
     }
 
-    async update(id: number, updateMembershipDto: UpdateMembershipDto) {
+    async update(id: number, dto: UpdateMembershipDto): Promise<Membership> {
         const membership = await this.findOne(id);
 
-        // Si se quiere actualizar el pago
-        if (updateMembershipDto.paymentId) {
-            const payment = await this.paymentRepository.findOne({ where: { id: updateMembershipDto.paymentId } });
-            if (!payment) throw new NotFoundException('Payment not found');
-            membership.payment = payment;
-        }
-
-        Object.assign(membership, updateMembershipDto);
-
-        return this.membershipRepository.save(membership);
+        Object.assign(membership, dto);
+        return await this.membershipsRepository.save(membership);
     }
 
-    remove(id: number) {
-        return `This action removes a #${id} membership`;
-    }
-
-    // Activate membership
-
-    async activateMembership(membership: Membership) {
-        if (!membership) {
-            throw new BadRequestException('Membership not found');
-        }
-
-        if (membership.status === MembershipStatus.ACTIVE) {
-            throw new BadRequestException('Membership is already active');
-        }
-
-        // Establecer fechas
-        const startDate = new Date();
-        const endDate = this.calculateEndDate(startDate, membership.type);
-
-        membership.startDate = startDate;
-        membership.endDate = endDate;
-        membership.status = MembershipStatus.ACTIVE;
-
-        return this.membershipRepository.save(membership);
-    }
-
-    // Calculate days 
-
-    private calculateEndDate(startDate: Date, type: MembershipType): Date {
-        const endDate = new Date(startDate);
-        switch (type) {
-            case MembershipType.MONTHLY:
-                endDate.setMonth(endDate.getMonth() + 1);
-                break;
-            case MembershipType.QUARTERLY:
-                endDate.setMonth(endDate.getMonth() + 3);
-                break;
-            case MembershipType.ANNUAL:
-                endDate.setFullYear(endDate.getFullYear() + 1);
-                break;
-            default:
-                throw new BadRequestException('Invalid membership type');
-        }
-        return endDate;
+    async remove(id: number): Promise<{ message: string }> {
+        const membership = await this.findOne(id);
+        await this.membershipsRepository.remove(membership);
+        return { message: `Membresía con id ${id} eliminada` };
     }
 }

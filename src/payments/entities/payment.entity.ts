@@ -1,50 +1,50 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToOne, CreateDateColumn } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
-import { Membership } from '../../memberships/entities/membership.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Subscription } from '../../subscriptions/entities/subscription.entity';
 
 export enum PaymentMethod {
-    ONLINE = 'ONLINE',
+    CARD = 'CARD',
     CASH = 'CASH',
-    ADMIN = 'ADMIN', // Pago asignado por administrador
+    PAYPAL = 'PAYPAL',
+    ADMIN = 'ADMIN',
 }
 
 export enum PaymentStatus {
-    PENDING = 'PENDING',       // Pago creado pero no confirmado
-    APPROVED = 'APPROVED',     // Pago confirmado exitosamente
-    FAILED = 'FAILED',         // Pago rechazado
-    CANCELLED = 'CANCELLED',   // Pago cancelado por usuario o admin
+    PENDING = 'PENDING',
+    APPROVED = 'APPROVED',
+    FAILED = 'FAILED',
+    REFUNDED = 'REFUNDED',
 }
 
-@Entity('payments')
+@Entity()
 export class Payment {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ type: 'decimal', precision: 10, scale: 2 })
+    @ManyToOne(() => Subscription, (s) => s.payments, { onDelete: 'CASCADE', eager: true })
+    subscription: Subscription;
+
+    @Column('decimal', { precision: 10, scale: 2 })
     amount: number;
 
-    @Column({ type: 'enum', enum: PaymentMethod })
+    @Column({ default: 'USD' })
+    currency: string;
+
+    @Column({
+        type: 'enum',
+        enum: PaymentMethod,
+    })
     method: PaymentMethod;
 
-    @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
+    @Column({
+        type: 'enum',
+        enum: PaymentStatus,
+        default: PaymentStatus.PENDING,
+    })
     status: PaymentStatus;
 
-    @Column({ type: 'varchar', nullable: true })
-    transactionId?: string;
-
-    @Column({ type: 'json', nullable: true })
-    metadata?: Record<string, any>;
-    // información adicional del pago (e.g., respuesta del gateway)
-
     @CreateDateColumn()
-    createdAt: Date;
+    paymentDate: Date;
 
-
-    // Relations
-    @ManyToOne(() => User, user => user.payments)
-    user: User;
-
-    @OneToOne(() => Membership, membership => membership.payment)
-    membership: Membership;
-
+    @Column({ nullable: true })
+    externalId: string; // id del pago en la pasarela
 }

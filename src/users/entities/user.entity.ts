@@ -1,44 +1,54 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Subscription } from '../../subscriptions/entities/subscription.entity';
 import { Membership } from '../../memberships/entities/membership.entity';
-import { Payment } from '../../payments/entities/payment.entity';
-import { Routine } from '../../routines/entities/routine.entity';
 
-@Entity('users')
+export enum UserRole {
+    CLIENT = 'CLIENT',
+    ADMIN = 'ADMIN',
+    TRAINER = 'TRAINER',
+}
+
+export enum AuthProvider {
+    LOCAL = 'LOCAL',
+    GOOGLE = 'GOOGLE',
+}
+
+@Entity()
 export class User {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ type: 'varchar', length: 100 })
+    @Column()
     name: string;
 
-    @Column({ type: 'varchar', unique: true })
+    @Column({ unique: true })
     email: string;
 
-    @Column({ type: 'varchar', select: false })
-    password: string;
+    @Column({ type: 'varchar', length: 100, nullable: true })
+    password: string | null;
 
-    @Column({ type: 'varchar', length: 8, nullable: true, unique: true })
-    dni?: string;
 
-    @Column({ type: 'enum', enum: ['CLIENT', 'TRAINER', 'ADMIN'], default: 'CLIENT' })
-    role: 'CLIENT' | 'TRAINER' | 'ADMIN';
+    @Column({
+        type: 'enum',
+        enum: UserRole,
+        default: UserRole.CLIENT,
+    })
+    role: UserRole;
 
-    @Column({ type: 'varchar', nullable: true })
-    phone?: string;
+    @Column({
+        type: 'enum',
+        enum: AuthProvider,
+        default: AuthProvider.LOCAL,
+    })
+    provider: AuthProvider;
 
-    // Historial de membresías
-    @OneToMany(() => Membership, membership => membership.user)
+    @Column({ type: 'varchar', nullable: true, unique: true })
+    googleId: string | null;
+
+    // Relations
+    @OneToMany(() => Subscription, (sub) => sub.user)
+    subscriptions: Subscription[];
+
+    @OneToMany(() => Membership, (m) => m.user)
     memberships: Membership[];
-
-    // Pagos realizados
-    @OneToMany(() => Payment, payment => payment.user)
-    payments: Payment[];
-
-    // Rutinas asignadas (solo clientes)
-    @OneToMany(() => Routine, routine => routine.client)
-    routines: Routine[];
-
-    // Rutinas creadas por trainer
-    @OneToMany(() => Routine, routine => routine.trainer)
-    createdRoutines: Routine[];
 }
