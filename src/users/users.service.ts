@@ -16,23 +16,25 @@ export class UsersService {
     ) { }
 
     async create(createUserDto: CreateUserDto) {
-
-        // Check if the user already exists by email
+        // Verificar email duplicado
         const existingUser = await this.usersRepository.findOneBy({
-            email: createUserDto.email
+            email: createUserDto.email,
         });
         if (existingUser) throw new ConflictException('Email already in use');
 
         let password: string | null = null;
 
-        if (
-            createUserDto.provider === AuthProvider.LOCAL ||
-            !createUserDto.provider
-        ) {
+        if (!createUserDto.provider || createUserDto.provider === AuthProvider.LOCAL) {
+            // Usuario LOCAL → requiere password
             if (!createUserDto.password) {
                 throw new BadRequestException('La contraseña es requerida');
             }
             password = await bcrypt.hash(createUserDto.password, 10);
+        } else if (createUserDto.provider === AuthProvider.GOOGLE) {
+            // Usuario Google → guardar googleId y no password
+            if (!createUserDto.googleId) {
+                throw new BadRequestException('Google ID es requerido');
+            }
         }
 
         const user = this.usersRepository.create({
@@ -40,8 +42,9 @@ export class UsersService {
             password,
         });
 
-        return await this.usersRepository.save(user);
+        return this.usersRepository.save(user);
     }
+
 
     async findAll(query: QueryUsersDto) {
         const { page = 1, limit = 10, search } = query;
@@ -90,13 +93,13 @@ export class UsersService {
 
 
     async findByEmail(email: string, withPassword = false) {
-  if (withPassword) {
-    return this.usersRepository.findOne({
-      where: { email },
-      select: ['id', 'email', 'password', 'role'], // incluye password
-    });
-  }
-  return this.usersRepository.findOne({ where: { email } });
-}
+        if (withPassword) {
+            return this.usersRepository.findOne({
+                where: { email },
+                select: ['id', 'email', 'password', 'role'], // incluye password
+            });
+        }
+        return this.usersRepository.findOne({ where: { email } });
+    }
 
 }
