@@ -4,12 +4,10 @@ import { MembershipsController } from './memberships.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Membership } from './entities/membership.entity';
 import { UsersModule } from '../users/users.module';
-import { Payment } from 'src/payments/entities/payment.entity';
-import { Subscription } from 'src/subscriptions/entities/subscription.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Membership, Payment, Subscription]),
+    TypeOrmModule.forFeature([Membership]),
     UsersModule,
     
   ],

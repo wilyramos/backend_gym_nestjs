@@ -1,46 +1,72 @@
-import { Injectable } from '@nestjs/common';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Payment, PaymentStatus } from './entities/payment.entity';
 import { Repository } from 'typeorm';
-import { UsersService } from '../users/users.service';
-import { MembershipsService } from '../memberships/memberships.service';
+import { Payment, PaymentStatus } from './entities/payment.entity';
+import { Subscription } from '../subscriptions/entities/subscription.entity';
 
 @Injectable()
 export class PaymentsService {
-
     constructor(
         @InjectRepository(Payment)
-        private paymentRepository: Repository<Payment>,
+        private readonly paymentsRepo: Repository<Payment>,
 
-        private usersService: UsersService,
-        private membershipsService: MembershipsService
-
+        @InjectRepository(Subscription)
+        private readonly subscriptionsRepo: Repository<Subscription>,
     ) { }
 
-    async create(createPaymentDto: CreatePaymentDto) {
+    async createPayment(subscriptionId: number, data: Partial<Payment>): Promise<Payment> {
+        const subscription = await this.subscriptionsRepo.findOne({
+            where: { id: subscriptionId },
+        });
+        if (!subscription) {
+            throw new NotFoundException(`Subscription ${subscriptionId} not found`);
+        }
 
+        const payment = this.paymentsRepo.create({
+            ...data,
+            subscription,
+            status: PaymentStatus.PENDING, // siempre inicia en pending
+        });
 
-
-        return `This action adds a new payment`;
+        return this.paymentsRepo.save(payment);
     }
 
-    findAll() {
-        return `This action returns all payments`;
+    async confirmPayment(paymentId: number, externalId?: string): Promise<Payment> {
+        const payment = await this.paymentsRepo.findOne({ where: { id: paymentId } });
+        if (!payment) throw new NotFoundException(`Payment ${paymentId} not found`);
+
+        payment.status = PaymentStatus.APPROVED;
+        if (externalId) payment.externalId = externalId;
+
+        return this.paymentsRepo.save(payment);
     }
 
-    findOne(id: number) {
+    async failPayment(paymentId: number): Promise<Payment> {
+        const payment = await this.paymentsRepo.findOne({ where: { id: paymentId } });
+        if (!payment) throw new NotFoundException(`Payment ${paymentId} not found`);
 
-
-
+        payment.status = PaymentStatus.FAILED;
+        return this.paymentsRepo.save(payment);
     }
 
-    update(id: number, updatePaymentDto: UpdatePaymentDto) {
-        return `This action updates a #${id} payment`;
+    async refundPayment(paymentId: number): Promise<Payment> {
+        const payment = await this.paymentsRepo.findOne({ where: { id: paymentId } });
+        if (!payment) throw new NotFoundException(`Payment ${paymentId} not found`);
+
+        payment.status = PaymentStatus.REFUNDED;
+        return this.paymentsRepo.save(payment);
     }
 
-    remove(id: number) {
-        return `This action removes a #${id} payment`;
+    async findBySubscription(subscriptionId: number): Promise<Payment[]> {
+        return this.paymentsRepo.find({
+            where: { subscription: { id: subscriptionId } },
+            order: { paymentDate: 'DESC' },
+        });
+    }
+
+    async findOne(id: number): Promise<Payment> {
+        const payment = await this.paymentsRepo.findOne({ where: { id } });
+        if (!payment) throw new NotFoundException(`Payment ${id} not found`);
+        return payment;
     }
 }

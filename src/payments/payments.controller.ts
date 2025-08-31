@@ -1,38 +1,41 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Post, Param, Body, Patch, Get } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentDto } from './dto/update-payment.dto';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { RolesGuard } from 'src/auth/guards/roles.guard.ts';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { Payment } from './entities/payment.entity';
 
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(private readonly paymentsService: PaymentsService) { }
 
-  @Post()
-  create(@Body() createPaymentDto: CreatePaymentDto) {
-
-    return this.paymentsService.create(createPaymentDto);
+  @Post(':subscriptionId')
+  createPayment(
+    @Param('subscriptionId') subscriptionId: number,
+    @Body() body: Partial<Payment>,
+  ) {
+    return this.paymentsService.createPayment(subscriptionId, body);
   }
 
-  @Get()
-  findAll() {
-    return this.paymentsService.findAll();
+  @Patch(':id/confirm')
+  confirm(@Param('id') id: number, @Body('externalId') externalId?: string) {
+    return this.paymentsService.confirmPayment(id, externalId);
+  }
+
+  @Patch(':id/fail')
+  fail(@Param('id') id: number) {
+    return this.paymentsService.failPayment(id);
+  }
+
+  @Patch(':id/refund')
+  refund(@Param('id') id: number) {
+    return this.paymentsService.refundPayment(id);
+  }
+
+  @Get('subscription/:subscriptionId')
+  findBySubscription(@Param('subscriptionId') subscriptionId: number) {
+    return this.paymentsService.findBySubscription(subscriptionId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.paymentsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePaymentDto: UpdatePaymentDto) {
-    return this.paymentsService.update(+id, updatePaymentDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.paymentsService.remove(+id);
+  findOne(@Param('id') id: number) {
+    return this.paymentsService.findOne(id);
   }
 }

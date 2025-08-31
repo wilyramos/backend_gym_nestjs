@@ -13,7 +13,7 @@ export class Membership {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @ManyToOne(() => User, (u) => u.memberships, { eager: true })
+    @ManyToOne(() => User, (u) => u.memberships, { eager: false })
     user: User;
 
     @OneToOne(() => Subscription, (s) => s.membership)

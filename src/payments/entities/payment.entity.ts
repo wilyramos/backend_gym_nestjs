@@ -20,7 +20,7 @@ export class Payment {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @ManyToOne(() => Subscription, (s) => s.payments, { onDelete: 'CASCADE', eager: true })
+    @ManyToOne(() => Subscription, (s) => s.payments, { onDelete: 'CASCADE' })
     subscription: Subscription;
 
     @Column('decimal', { precision: 10, scale: 2 })

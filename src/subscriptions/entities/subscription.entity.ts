@@ -21,7 +21,7 @@ export class Subscription {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @ManyToOne(() => User, (user) => user.subscriptions, { eager: true })
+    @ManyToOne(() => User, (user) => user.subscriptions, { eager: false })
     user: User;
 
     @Column({
