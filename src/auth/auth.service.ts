@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -79,4 +79,9 @@ export class AuthService {
         // Generar JWT
         return this.login(user);
     }
-}
+
+    async checkEmail(email: string) {
+        const user = await this.usersService.findByEmail(email);
+        return { exists: !!user };
+    }
+}   

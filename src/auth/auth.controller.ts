@@ -25,4 +25,9 @@ export class AuthController {
         const { email, googleId, name } = googleDto;
         return this.authService.googleLogin(email, googleId, name);
     }
+
+    @Post('check-email')
+    async checkEmail(@Body() emailDto: { email: string }) {
+        return this.authService.checkEmail(emailDto.email);
+    }
 }
