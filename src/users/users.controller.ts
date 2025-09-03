@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -8,24 +8,36 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard.ts';
 
 
+
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
 
     @Post()
-    @UseGuards() // No guard, public route
     create(@Body() createUserDto: CreateUserDto) {
         return this.usersService.create(createUserDto);
     }
 
-    @Get()
-    @Roles('ADMIN')
-    findAll(@Query() query: QueryUsersDto) {
-        return this.usersService.findAll(query);
+    @Get('me') // Colocada antes de :id
+    getMe(@Request() req) {
+        console.log('Usuario logueado:', req.user);
+        return this.usersService.getUser(req.user.id);
     }
 
-    @Get(':id')
+    @Get()
+    @Roles('ADMIN')
+    findAll(
+        @Query('page') page: string,
+        @Query('limit') limit: string,
+        @Query('search') search?: string,
+    ) {
+        const pageNumber = Number(page) || 1;
+        const limitNumber = Number(limit) || 10;
+        return this.usersService.findAll({ page: pageNumber, limit: limitNumber, search });
+    }
+
+    @Get(':id') // rutas dinámicas van al final
     @Roles('ADMIN', 'CLIENT')
     findOne(@Param('id') id: string) {
         return this.usersService.findOne(+id);

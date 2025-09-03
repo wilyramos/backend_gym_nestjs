@@ -12,6 +12,7 @@ export enum SubscriptionStatus {
 
 export enum SubscriptionPlan {
     MONTHLY = 'MONTHLY',
+    TRIMESTRAL = 'TRIMESTRAL',
     YEARLY = 'YEARLY',
     PREMIUM = 'PREMIUM',
 }

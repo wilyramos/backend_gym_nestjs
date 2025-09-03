@@ -8,8 +8,13 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
-  })); // Enable validation globally, and transform payloads to DTO instances
-  
+    transform: true,
+    transformOptions: {
+      enableImplicitConversion: true,
+    }
+  }),
+  );
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

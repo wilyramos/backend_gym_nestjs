@@ -6,7 +6,7 @@ export class QueryUsersDto {
     @IsInt()
     @Min(1)
     @IsOptional()
-    page?: number = 1;
+    page?: number = 1; // 👈 define tipo y default
 
     @Type(() => Number)
     @IsInt()
