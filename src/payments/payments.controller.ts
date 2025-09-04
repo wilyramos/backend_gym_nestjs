@@ -1,6 +1,7 @@
-import { Controller, Post, Param, Body, Patch, Get } from '@nestjs/common';
+import { Controller, Post, Param, Body, Patch, Get, UseGuards, Req, Request } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { Payment } from './entities/payment.entity';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('payments')
 export class PaymentsController {
@@ -37,5 +38,12 @@ export class PaymentsController {
   @Get(':id')
   findOne(@Param('id') id: number) {
     return this.paymentsService.findOne(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/history')
+  findMyPayments(@Request() req) {
+    console.log('User ID from JWT:', req.user.id);
+    return this.paymentsService.findByUser(req.user.id);
   }
 }

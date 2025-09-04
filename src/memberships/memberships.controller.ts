@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Param, Body, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Patch, UseGuards, Request } from '@nestjs/common';
 import { MembershipsService } from './memberships.service';
 import { MembershipStatus } from './entities/membership.entity';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('memberships')
 export class MembershipsController {
@@ -14,6 +15,13 @@ export class MembershipsController {
     @Get()
     findAll() {
         return this.membershipsService.findAll();
+    }
+
+    // Get membership by user logueado
+    @UseGuards(JwtAuthGuard)
+    @Get('me')
+    findMyMembership(@Request() req) {
+        return this.membershipsService.findByUser(req.user.id);
     }
 
     @Get(':id')

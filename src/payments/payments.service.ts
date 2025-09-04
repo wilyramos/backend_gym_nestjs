@@ -69,4 +69,19 @@ export class PaymentsService {
         if (!payment) throw new NotFoundException(`Payment ${id} not found`);
         return payment;
     }
+
+    async findByUser(userId: number) {
+        console.log('Finding payments for user:', userId);
+        const payments = await this.paymentsRepo.find({
+            where: { subscription: { user: { id: userId } } },
+            relations: { subscription: true },
+            order: { paymentDate: 'DESC' },
+        });
+        console.log(`Found ${payments.length} payments for user ${userId}`);
+
+        if (!payments || payments.length === 0) {
+            throw new NotFoundException(`No payments found for user ${userId}`);
+        }
+        return payments;
+    }    
 }
