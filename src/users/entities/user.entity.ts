@@ -27,13 +27,20 @@ export class User {
     @Column({ type: 'varchar', length: 100, nullable: true, select: false })
     password: string | null;
 
-
     @Column({
         type: 'enum',
         enum: UserRole,
         default: UserRole.CLIENT,
     })
     role: UserRole;
+
+    @Column({ type: 'varchar', length: 20, nullable: true })
+    phone: string | null;
+
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    document: string | null;
+
+    // Google
 
     @Column({
         type: 'enum',
@@ -44,6 +51,9 @@ export class User {
 
     @Column({ type: 'varchar', nullable: true, unique: true })
     googleId: string | null;
+
+
+
 
     // Relations
     @OneToMany(() => Subscription, (sub) => sub.user)

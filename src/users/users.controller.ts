@@ -25,6 +25,11 @@ export class UsersController {
         return this.usersService.getUser(req.user.id);
     }
 
+    @Patch('/me')
+    updateMe(@Request() req, @Body() updateUserDto: UpdateUserDto) {
+        return this.usersService.update(req.user.id, updateUserDto);
+    }
+
     @Get()
     @Roles('ADMIN')
     findAll(
@@ -54,4 +59,6 @@ export class UsersController {
     remove(@Param('id') id: string) {
         return this.usersService.remove(+id);
     }
+
+    
 }
