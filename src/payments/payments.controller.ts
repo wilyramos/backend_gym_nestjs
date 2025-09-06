@@ -1,49 +1,78 @@
-import { Controller, Post, Param, Body, Patch, Get, UseGuards, Req, Request } from '@nestjs/common';
+import {
+    Controller,
+    Post,
+    Param,
+    Body,
+    Patch,
+    Get,
+    UseGuards,
+    Request,
+} from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { Payment } from './entities/payment.entity';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) { }
+    constructor(private readonly paymentsService: PaymentsService) { }
 
-  @Post(':subscriptionId')
-  createPayment(
-    @Param('subscriptionId') subscriptionId: number,
-    @Body() body: Partial<Payment>,
-  ) {
-    return this.paymentsService.createPayment(subscriptionId, body);
-  }
+    // ---- PAGOS ÚNICOS ----
+    @Post(':subscriptionId')
+    createPayment(
+        @Param('subscriptionId') subscriptionId: number,
+        @Body() body: Partial<Payment>,
+    ) {
+        return this.paymentsService.createPayment(subscriptionId, body);
+    }
 
-  @Patch(':id/confirm')
-  confirm(@Param('id') id: number, @Body('externalId') externalId?: string) {
-    return this.paymentsService.confirmPayment(id, externalId);
-  }
+    @Patch(':id/confirm')
+    confirm(@Param('id') id: number, @Body('externalId') externalId?: string) {
+        return this.paymentsService.confirmPayment(id, externalId);
+    }
 
-  @Patch(':id/fail')
-  fail(@Param('id') id: number) {
-    return this.paymentsService.failPayment(id);
-  }
+    @Patch(':id/fail')
+    fail(@Param('id') id: number) {
+        return this.paymentsService.failPayment(id);
+    }
 
-  @Patch(':id/refund')
-  refund(@Param('id') id: number) {
-    return this.paymentsService.refundPayment(id);
-  }
+    @Patch(':id/refund')
+    refund(@Param('id') id: number) {
+        return this.paymentsService.refundPayment(id);
+    }
 
-  @Get('subscription/:subscriptionId')
-  findBySubscription(@Param('subscriptionId') subscriptionId: number) {
-    return this.paymentsService.findBySubscription(subscriptionId);
-  }
+    @Get('subscription/:subscriptionId')
+    findBySubscription(@Param('subscriptionId') subscriptionId: number) {
+        return this.paymentsService.findBySubscription(subscriptionId);
+    }
 
-  @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.paymentsService.findOne(id);
-  }
+    @Get(':id')
+    findOne(@Param('id') id: number) {
+        return this.paymentsService.findOne(id);
+    }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('me/history')
-  findMyPayments(@Request() req) {
-    console.log('User ID from JWT:', req.user.id);
-    return this.paymentsService.findByUser(req.user.id);
-  }
+    @UseGuards(JwtAuthGuard)
+    @Get('me/history')
+    findMyPayments(@Request() req) {
+        return this.paymentsService.findByUser(req.user.id);
+    }
+
+    // ---- 🚀 SUSCRIPCIONES ----
+    @Post(':subscriptionId/subscription')
+    createSubscription(
+        @Param('subscriptionId') subscriptionId: number,
+        @Body()
+        body: {
+            planName: string;
+            frequency: number; // ej. 1 = cada mes, 3 = cada 3 meses
+            amount: number;
+        },
+    ) {
+        const { planName, frequency, amount } = body;
+        return this.paymentsService.createSubscription(
+            subscriptionId,
+            planName,
+            frequency,
+            amount,
+        );
+    }
 }

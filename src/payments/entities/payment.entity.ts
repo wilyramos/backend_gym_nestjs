@@ -1,5 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+// src/payments/entities/payment.entity.ts
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    ManyToOne,
+    CreateDateColumn,
+    Index,
+} from 'typeorm';
 import { Subscription } from '../../subscriptions/entities/subscription.entity';
+import { PaymentGateway } from '../../payments/enums/payment-gateway.enum';
 
 export enum PaymentMethod {
     CARD = 'CARD',
@@ -45,6 +54,17 @@ export class Payment {
     @CreateDateColumn()
     paymentDate: Date;
 
+    @Index()
     @Column({ nullable: true })
     externalId: string; // id del pago en la pasarela
+
+    @Column({
+        type: 'enum',
+        enum: PaymentGateway,
+        default: PaymentGateway.MERCADOPAGO,
+    })
+    gateway: PaymentGateway;
+
+    @Column({ default: 1 })
+    attempt: number; // número de intento de cobro
 }

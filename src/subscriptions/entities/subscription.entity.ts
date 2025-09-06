@@ -1,7 +1,19 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, OneToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+// src/subscriptions/entities/subscription.entity.ts
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    ManyToOne,
+    OneToMany,
+    OneToOne,
+    JoinColumn,
+    CreateDateColumn,
+    Index,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Payment } from '../../payments/entities/payment.entity';
 import { Membership } from '../../memberships/entities/membership.entity';
+import { PaymentGateway } from '../../payments/enums/payment-gateway.enum';
 
 export enum SubscriptionStatus {
     ACTIVE = 'ACTIVE',
@@ -45,8 +57,22 @@ export class Subscription {
     @Column({ type: 'timestamp', nullable: true })
     endDate: Date;
 
+    @Column({
+        type: 'enum',
+        enum: PaymentGateway,
+        default: PaymentGateway.MERCADOPAGO,
+    })
+    gateway: PaymentGateway;
+
     @Column({ nullable: true })
-    externalId: string; // id en la pasarela (Stripe/MercadoPago)
+    gatewayPlanId: string; // ID del plan en la pasarela
+
+    @Column({ nullable: true })
+    gatewayCustomerId: string; // ID del cliente/payer en la pasarela
+
+    @Index() // para búsquedas rápidas
+    @Column({ nullable: true })
+    externalId: string; // id de la suscripción en la pasarela
 
     // Relations
     @OneToMany(() => Payment, (p) => p.subscription)

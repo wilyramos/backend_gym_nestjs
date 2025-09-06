@@ -11,6 +11,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeorm.config';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
+import { GatewaysModule } from './gateways/gateways.module';
 
 @Module({
     imports: [
@@ -28,6 +30,8 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
         AuthModule,
         ExercisesModule,
         SubscriptionsModule,
+        WebhooksModule,
+        GatewaysModule,
     ],
     controllers: [AppController],
     providers: [AppService],

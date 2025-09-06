@@ -1,8 +1,10 @@
+// src/payments/payments.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
+import { MercadoPagoService } from '../gateways/mercadopago/mercadopago.service';
 
 @Injectable()
 export class PaymentsService {
@@ -12,6 +14,8 @@ export class PaymentsService {
 
         @InjectRepository(Subscription)
         private readonly subscriptionsRepo: Repository<Subscription>,
+
+        private readonly mercadoPagoService: MercadoPagoService,
     ) { }
 
     async createPayment(subscriptionId: number, data: Partial<Payment>): Promise<Payment> {
@@ -25,7 +29,7 @@ export class PaymentsService {
         const payment = this.paymentsRepo.create({
             ...data,
             subscription,
-            status: PaymentStatus.PENDING, // siempre inicia en pending
+            status: PaymentStatus.PENDING,
         });
 
         return this.paymentsRepo.save(payment);
@@ -71,17 +75,43 @@ export class PaymentsService {
     }
 
     async findByUser(userId: number) {
-        console.log('Finding payments for user:', userId);
         const payments = await this.paymentsRepo.find({
             where: { subscription: { user: { id: userId } } },
             relations: { subscription: true },
             order: { paymentDate: 'DESC' },
         });
-        console.log(`Found ${payments.length} payments for user ${userId}`);
 
         if (!payments || payments.length === 0) {
             throw new NotFoundException(`No payments found for user ${userId}`);
         }
         return payments;
-    }    
+    }
+
+    /** 🚀 NUEVO: Crear una suscripción con MercadoPago */
+    async createSubscription(subscriptionId: number, planName: string, frequency: number, amount: number) {
+        const subscription = await this.subscriptionsRepo.findOne({
+            where: { id: subscriptionId },
+        });
+        if (!subscription) {
+            throw new NotFoundException(`Subscription ${subscriptionId} not found`);
+        }
+
+        // Llamar a MP
+        const mpResponse = await this.mercadoPagoService.createSubscription(planName, frequency, amount);
+
+        // Guardar el pago inicial como PENDING
+        const payment = this.paymentsRepo.create({
+            subscription,
+            status: PaymentStatus.PENDING,
+            externalId: mpResponse.id, // ID de la suscripción en MP
+            amount,
+        });
+
+        await this.paymentsRepo.save(payment);
+
+        return {
+            mpResponse,
+            payment,
+        };
+    }
 }
