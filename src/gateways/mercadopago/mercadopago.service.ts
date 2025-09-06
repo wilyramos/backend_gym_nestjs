@@ -46,6 +46,7 @@ export class MercadoPagoService {
     // Create subscription (Recurring payment) Preapproval
     async createSubscription(planName: string, frequency: number, amount: number) {
         try {
+            console.log("Creando suscripción en MP con:", { planName, frequency, amount });
             const { data } = await this.api.post('/preapproval', {
                 reason: planName,
                 auto_recurring: {
@@ -56,10 +57,12 @@ export class MercadoPagoService {
                     start_date: new Date().toISOString(),
                     end_date: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
                 },
-                back_url: 'http://localhost:3000/subscription/return',
-                payer_email: 'cliente@correo.com',
-            });
+                
 
+                back_url: 'https://d89e89c32795.ngrok-free.app/checkout/success',
+                payer_email: 'wilyramos21@gmail.com',
+            });
+            console.log("Respuesta de MP al crear suscripción:", data);
             return data;
         } catch (error) {
             throw new HttpException(

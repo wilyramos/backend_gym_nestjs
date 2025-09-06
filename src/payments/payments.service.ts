@@ -89,9 +89,11 @@ export class PaymentsService {
 
     /** 🚀 NUEVO: Crear una suscripción con MercadoPago */
     async createSubscription(subscriptionId: number, planName: string, frequency: number, amount: number) {
+        console.log("Creando suscripción en MP con:", { subscriptionId, planName, frequency, amount });
         const subscription = await this.subscriptionsRepo.findOne({
             where: { id: subscriptionId },
         });
+        
         if (!subscription) {
             throw new NotFoundException(`Subscription ${subscriptionId} not found`);
         }

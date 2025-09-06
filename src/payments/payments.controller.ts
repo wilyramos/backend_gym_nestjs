@@ -67,6 +67,7 @@ export class PaymentsController {
             amount: number;
         },
     ) {
+        console.log("Datos recibidos en createSubscription:", body);
         const { planName, frequency, amount } = body;
         return this.paymentsService.createSubscription(
             subscriptionId,

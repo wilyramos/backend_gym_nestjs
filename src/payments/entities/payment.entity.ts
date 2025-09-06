@@ -41,6 +41,7 @@ export class Payment {
     @Column({
         type: 'enum',
         enum: PaymentMethod,
+        default: PaymentMethod.CARD,
     })
     method: PaymentMethod;
 
