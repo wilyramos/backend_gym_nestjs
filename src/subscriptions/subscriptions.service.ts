@@ -33,10 +33,10 @@ export class SubscriptionsService {
     /** -------------------
      * Crear una suscripción
      * ------------------- */
-    async create(dto: CreateSubscriptionDto) {
+    async create(dto: CreateSubscriptionDto, userId: number) {
         // Validar que el usuario exista
-        const user = await this.usersRepo.findOne({ where: { id: dto.userId } });
-        if (!user) throw new NotFoundException(`User with id ${dto.userId} not found`);
+        const user = await this.usersRepo.findOne({ where: { id: userId } });
+        if (!user) throw new NotFoundException(`User with id ${userId} not found`);
 
         // Evitar suscripciones duplicadas activas
         const existing = await this.subscriptionsRepo.findOne({
@@ -50,31 +50,15 @@ export class SubscriptionsService {
         const subscription = this.subscriptionsRepo.create({
             user: user,
             plan: dto.plan,
-            status: SubscriptionStatus.ACTIVE,
+            status: SubscriptionStatus.PENDING,
             externalId: dto.externalId ?? undefined,
         });
 
-        // Crear membership asociado
-        const now = new Date();
-        const validTo = this.calculateEndDate(now, dto.plan);
-        console.log("validd", validTo);
-
-        const membership = this.membershipsRepo.create({
-            user,
-            status: MembershipStatus.ACTIVE,
-            validFrom: now,
-            validTo,
-        });
-
-        subscription.membership = membership;
-        subscription.endDate = validTo;
-
         const saved = await this.subscriptionsRepo.save(subscription);
-
-        // Tipar la respuesta
-
-        return saved;
-
+        return {
+            ...saved,
+            userId: saved.user.id,
+        };
     }
 
     /** -------------------

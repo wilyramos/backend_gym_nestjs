@@ -16,6 +16,7 @@ import { Membership } from '../../memberships/entities/membership.entity';
 import { PaymentGateway } from '../../payments/enums/payment-gateway.enum';
 
 export enum SubscriptionStatus {
+    PENDING = 'PENDING',
     ACTIVE = 'ACTIVE',
     PAST_DUE = 'PAST_DUE',
     CANCELED = 'CANCELED',
