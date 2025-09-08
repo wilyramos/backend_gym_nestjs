@@ -4,17 +4,21 @@ import { MP_CONFIG } from '../../config/mercadopago.config';
 
 @Injectable()
 export class MercadoPagoService {
+
+    
     private readonly api = axios.create({
         baseURL: MP_CONFIG.BASE_URL,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${MP_CONFIG.TOKEN}`,
+            Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN || MP_CONFIG.TOKEN}`,
         },
     });
 
 
     // Create preferencea (Unique payment)
     async createPreference(orderId: number, amount: number, description: string) {
+
+
         try {
             const { data } = await this.api.post('/checkout/preferences', {
                 items: [
@@ -44,7 +48,11 @@ export class MercadoPagoService {
     }
 
     // Create subscription (Recurring payment) Preapproval
-    async createSubscription(planName: string, frequency: number, amount: number) {
+    async createSubscription(planName: string, frequency: number, amount: number, email: string) {
+
+        
+        console.log('TOKEN:', process.env.MERCADOPAGO_ACCESS_TOKEN);
+        console.log("Creando CON EL TOKEN:", MP_CONFIG.TOKEN);
         try {
             console.log("Creando suscripción en MP con:", { planName, frequency, amount });
             const { data } = await this.api.post('/preapproval', {
@@ -57,10 +65,9 @@ export class MercadoPagoService {
                     start_date: new Date().toISOString(),
                     end_date: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
                 },
-                
 
                 back_url: 'https://d89e89c32795.ngrok-free.app/checkout/success',
-                payer_email: 'wilyramos21@gmail.com',
+                payer_email: email || 'wilyrss@gmail.com'
             });
             console.log("Respuesta de MP al crear suscripción:", data);
             return data;

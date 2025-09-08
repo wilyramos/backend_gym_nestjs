@@ -88,18 +88,21 @@ export class PaymentsService {
     }
 
     /** 🚀 NUEVO: Crear una suscripción con MercadoPago */
-    async createSubscription(subscriptionId: number, planName: string, frequency: number, amount: number) {
-        console.log("Creando suscripción en MP con:", { subscriptionId, planName, frequency, amount });
+    async createSubscription(subscriptionId: number, planName: string, frequency: number, amount: number, email: string) {
+        console.log("Creando suscripción en MP con:", { subscriptionId, planName, frequency, amount, email });
         const subscription = await this.subscriptionsRepo.findOne({
             where: { id: subscriptionId },
+            relations: ['user'],
         });
+
+        console.log("Subscription encontrada:", subscription);
         
         if (!subscription) {
             throw new NotFoundException(`Subscription ${subscriptionId} not found`);
         }
 
         // Llamar a MP
-        const mpResponse = await this.mercadoPagoService.createSubscription(planName, frequency, amount);
+        const mpResponse = await this.mercadoPagoService.createSubscription(planName, frequency, amount, subscription.user.email);
 
         // Guardar el pago inicial como PENDING
         const payment = this.paymentsRepo.create({
