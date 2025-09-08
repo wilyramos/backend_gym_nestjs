@@ -35,7 +35,7 @@ export class Payment {
     @Column('decimal', { precision: 10, scale: 2 })
     amount: number;
 
-    @Column({ default: 'USD' })
+    @Column({ default: 'PEN' })
     currency: string;
 
     @Column({

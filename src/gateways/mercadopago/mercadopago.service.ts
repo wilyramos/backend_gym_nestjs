@@ -66,8 +66,8 @@ export class MercadoPagoService {
                     end_date: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
                 },
 
-                back_url: 'https://d89e89c32795.ngrok-free.app/checkout/success',
-                payer_email: email || 'wilyrss@gmail.com'
+                back_url: process.env.MP_BACK_URL || 'http://localhost:3000/subscription/success',
+                payer_email: email,
             });
             console.log("Respuesta de MP al crear suscripción:", data);
             return data;

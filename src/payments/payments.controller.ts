@@ -60,22 +60,9 @@ export class PaymentsController {
     @Post(':subscriptionId/subscription')
     createSubscription(
         @Param('subscriptionId') subscriptionId: number,
-        @Body()
-        body: {
-            planName: string;
-            frequency: number; // ej. 1 = cada mes, 3 = cada 3 meses
-            amount: number;
-            email: string;
-        },
     ) {
-        console.log("Datos recibidos en createSubscription:", body);
-        const { planName, frequency, amount, email } = body;
         return this.paymentsService.createSubscription(
-            subscriptionId,
-            planName,
-            frequency,
-            amount,
-            email
+            subscriptionId
         );
     }
 }
