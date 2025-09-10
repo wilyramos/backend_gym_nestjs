@@ -59,6 +59,8 @@ export class Payment {
     @Column({ nullable: true })
     externalId: string; // id del pago en la pasarela
 
+    //TODO: cambiar a PaymentGatewayID
+
     @Column({
         type: 'enum',
         enum: PaymentGateway,

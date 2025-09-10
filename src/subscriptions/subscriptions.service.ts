@@ -1,8 +1,6 @@
 import {
     Injectable,
-    NotFoundException,
-    BadRequestException,
-    ConflictException,
+    NotFoundException, ConflictException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -15,7 +13,6 @@ import { User } from '../users/entities/user.entity';
 import { Membership, MembershipStatus } from '../memberships/entities/membership.entity';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
-import { SubscriptionResponseDto } from './dto/response-subscription.dto';
 
 @Injectable()
 export class SubscriptionsService {
@@ -83,6 +80,13 @@ export class SubscriptionsService {
         return subscription;
     }
 
+    async findById(id: number): Promise<Subscription | null> {
+        return this.subscriptionsRepo.findOne({
+            where: { id },
+            relations: ['user', 'payments', 'membership'],
+        });
+    }
+
     /** -------------------
      * Actualizar suscripción
      * ------------------- */
@@ -126,6 +130,24 @@ export class SubscriptionsService {
         return this.subscriptionsRepo.remove(subscription);
     }
 
+    async updateStatusByExternalId(externalId: string, status: SubscriptionStatus) {
+        const subscription = await this.subscriptionsRepo.findOne({
+            where: { externalId },
+            relations: ['membership'],
+        });
+        if (!subscription) throw new NotFoundException(`Subscription with externalId ${externalId} not found`);
+
+        subscription.status = status;
+
+        await this.subscriptionsRepo.save(subscription);
+    }
+
+    async updateStatusById(id: number, status: SubscriptionStatus) {
+        const subscription = await this.findOne(id);
+        subscription.status = status;
+        return this.subscriptionsRepo.save(subscription);
+    }
+
     /** -------------------
      * Helpers
      * ------------------- */
@@ -144,4 +166,8 @@ export class SubscriptionsService {
         console.log("end", endDate);
         return endDate;
     }
+
+
+
+
 }

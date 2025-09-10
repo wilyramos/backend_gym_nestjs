@@ -5,9 +5,12 @@ import { Repository } from 'typeorm';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { MercadoPagoService } from '../gateways/mercadopago/mercadopago.service';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class PaymentsService {
+    private readonly logger = new Logger(PaymentsService.name);
+
     constructor(
         @InjectRepository(Payment)
         private readonly paymentsRepo: Repository<Payment>,
@@ -96,7 +99,7 @@ export class PaymentsService {
         });
 
         console.log("Subscription encontrada:", subscription);
-        
+
         if (!subscription) {
             throw new NotFoundException(`Subscription ${subscriptionId} not found`);
         }
@@ -123,13 +126,16 @@ export class PaymentsService {
         }
 
         // Llamar a MP
-        const mpResponse = await this.mercadoPagoService.createSubscription(subscription.plan, frequency, amount, subscription.user.email);
+        const mpResponse = await this.mercadoPagoService.createSubscription(subscription.plan, frequency, amount, subscription.user.email, subscription.id);
+
+        subscription.externalId = mpResponse.id; // Guardar el ID de la suscripción de MP
+        await this.subscriptionsRepo.save(subscription);
 
         // Guardar el pago inicial como PENDING
         const payment = this.paymentsRepo.create({
             subscription,
             status: PaymentStatus.PENDING,
-            externalId: mpResponse.id, // ID de la suscripción en MP
+            // externalId: 
             amount,
         });
 
@@ -140,4 +146,34 @@ export class PaymentsService {
             payment,
         };
     }
+
+    async updateStatusFromMercadoPago(payload: any) {
+        const { id, status } = payload;
+
+
+        const payment = await this.paymentsRepo.findOne({ where: { externalId: id } });
+        if (!payment) throw new NotFoundException(`Payment with externalId ${id} not found`);
+
+        payment.status = status;
+        await this.paymentsRepo.save(payment);
+        return payment;
+    }
+
+    async updateStatusByExternalId(externalId: string, status: PaymentStatus) {
+        const payment = await this.paymentsRepo.findOne({ where: { externalId } });
+
+        if (!payment) {
+            // 🔎 No existe → no lanzamos excepción, solo loggeamos
+            this.logger?.warn?.(`⚠️ Payment con externalId=${externalId} no encontrado para actualizar`);
+            return null;
+        }
+
+        payment.status = status;
+        return this.paymentsRepo.save(payment);
+    }
+
+    async findByGatewayPaymentId(externalId: string): Promise<Payment | null> {
+        return this.paymentsRepo.findOne({ where: { externalId } }) ?? null;
+    }
+
 }

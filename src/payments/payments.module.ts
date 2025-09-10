@@ -4,7 +4,8 @@ import { PaymentsController } from './payments.controller';
 import { Payment } from './entities/payment.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
-import { GatewaysModule } from 'src/gateways/gateways.module';
+import { GatewaysModule } from '../gateways/gateways.module';
+import { MercadoPagoPaymentsService } from './mercadopago-payments.service';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { GatewaysModule } from 'src/gateways/gateways.module';
     GatewaysModule
   ],
   controllers: [PaymentsController],
-  providers: [PaymentsService],
-  exports: [PaymentsService],
+  providers: [PaymentsService, MercadoPagoPaymentsService],
+  exports: [PaymentsService, MercadoPagoPaymentsService],
 })
 export class PaymentsModule { }

@@ -5,23 +5,15 @@ import { WebhooksService } from './webhooks.service';
 export class WebhooksController {
     constructor(private readonly webhooksService: WebhooksService) { }
 
-    // Ejemplo: Mercado Pago -> POST /webhooks/mercadopago
     @Post('mercadopago')
     async handleMercadoPagoWebhook(
         @Body() body: any,
-        @Headers('x-signature') signature: string, // opcional, para validar
-        @Req() req: Request,
+        // @Headers('x-signature') signature: string,
+        @Req() req: any,
     ) {
-        // Solo delegamos, la lógica va en el servicio
-        return this.webhooksService.handleMercadoPagoEvent(body, signature);
-    }
+        console.log('Body:', body);
 
-    // Ejemplo: PayPal -> POST /webhooks/paypal
-    @Post('paypal')
-    async handlePayPalWebhook(
-        @Body() body: any,
-        @Headers('paypal-transmission-id') transmissionId: string, // opcional
-    ) {
-        return this.webhooksService.handlePayPalEvent(body, transmissionId);
+        //TODO: validacion de la firma del webhook
+        return this.webhooksService.handleMercadoPagoEvent(body);
     }
 }

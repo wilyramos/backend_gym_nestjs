@@ -24,10 +24,8 @@ export class SubscriptionsController {
     @Post()
     create(@Body() dto: CreateSubscriptionDto, @Request() req) {
         const userId = req.user.id;
-        console.log("Creating subscription for userId:", userId, "with dto:", dto);
         return this.subscriptionsService.create(dto, userId);
     }
-
 
     /** -------------------
      * Listar suscripciones
