@@ -18,7 +18,7 @@ export class WebhooksService {
     ) { }
 
     async handleMercadoPagoEvent(payload: any) {
-        this.logger.log(`📩 Webhook MercadoPago recibido: ${JSON.stringify(payload)}`);
+        this.logger.log(`Webhook MercadoPago recibido: ${JSON.stringify(payload)}`);
 
         try {
             const { type, action, data } = payload;
@@ -35,55 +35,53 @@ export class WebhooksService {
                     break;
 
                 default:
-                    this.logger.warn(`⚠️ Evento no manejado: ${type}`);
+                    this.logger.warn(`Evento no manejado: ${type}`);
             }
         } catch (error) {
-            this.logger.error(`❌ Error manejando webhook: ${error.message}`, error.stack);
+            this.logger.error(`Error manejando webhook: ${error.message}`, error.stack);
         }
     }
 
     private async handleAuthorizedPayment(authorizedPaymentId: string) {
-        this.logger.log(`🔎 Consultando authorized_payment id=${authorizedPaymentId}`);
 
         const paymentData = await this.mercadoPagoPaymentsService.getAuthorizedPayment(
             authorizedPaymentId,
         );
-        this.logger.debug(`📊 Detalle authorized_payment: ${JSON.stringify(paymentData)}`);
-
-        const subscriptionId = Number(paymentData.external_reference); // lo mandaste al crear preapproval
+        const subscriptionId = Number(paymentData.external_reference);
+        const mpPaymentId = paymentData.payment?.id?.toString();
+        this.logger.debug(`Detalle pago autorizado: ${JSON.stringify(paymentData)}`);
         const status = paymentData.payment?.status || paymentData.status;
         const amount = paymentData.transaction_amount;
-        const gatewayPaymentId = paymentData.payment?.id?.toString();
 
-        // 1️⃣ Buscar la suscripción asociada
+        // Buscar la suscripción asociada
         const subscription = await this.subscriptionsService.findById(subscriptionId);
         if (!subscription) {
-            this.logger.error(`❌ No se encontró la suscripción con id=${subscriptionId}`);
+            this.logger.error(`No se encontró la suscripción con id=${subscriptionId}`);
             return;
         }
 
-        // 2️⃣ Buscar si ya existe el pago
-        let payment = await this.paymentsService.findByGatewayPaymentId(gatewayPaymentId);
+        // Registrar o actualizar el pago
+        let payment = await this.paymentsService.findByGatewayPaymentId(mpPaymentId);
 
         if (!payment) {
             this.logger.log(
-                `🆕 Creando pago subscriptionId=${subscription.id}, mpPaymentId=${gatewayPaymentId}`,
+                `Creando pago subscriptionId=${subscription.id}, mpPaymentId=${mpPaymentId}`,
             );
 
             payment = await this.paymentsService.createPayment(subscription.id, {
                 amount,
                 status: this.mapStatus(status),
-                externalId: gatewayPaymentId,
+                externalId: mpPaymentId,
             });
         } else {
-            this.logger.log(`🔄 Actualizando estado pago mpPaymentId=${gatewayPaymentId}`);
+            this.logger.log(`Actualizando estado pago mpPaymentId=${mpPaymentId}`);
             await this.paymentsService.updateStatusByExternalId(
-                gatewayPaymentId,
+                mpPaymentId,
                 this.mapStatus(status),
             );
         }
 
-        // 3️⃣ Si aprobado → activar/renovar membresía
+        // Si aprobado → activar/renovar membresía
         if (status === 'approved' || status === 'processed') {
             await this.membershipsService.createOrUpdateMembership({
                 userId: subscription.user.id,
@@ -92,16 +90,16 @@ export class WebhooksService {
             });
 
             this.logger.log(
-                `✅ Membresía activada/renovada para userId=${subscription.user.id}, plan=${subscription.plan}`,
+                `Membresía activada/renovada para userId=${subscription.user.id}, plan=${subscription.plan}`,
             );
         }
     }
 
     private async handleSubscriptionUpdate(preapprovalId: string) {
-        this.logger.log(`🔎 Consultando preapproval id=${preapprovalId}`);
+        this.logger.log(`Consultando preapproval id=${preapprovalId}`);
 
         const subData = await this.mercadoPagoPaymentsService.getPreapproval(preapprovalId);
-        this.logger.debug(`📊 Detalle preapproval: ${JSON.stringify(subData)}`);
+        this.logger.debug(`Detalle preapproval: ${JSON.stringify(subData)}`);
 
         const subscriptionId = Number(subData.external_reference);
         const status = subData.status; // authorized, paused, cancelled, etc.
@@ -109,18 +107,30 @@ export class WebhooksService {
         // Actualizar estado local de la suscripción
         await this.subscriptionsService.updateStatusById(subscriptionId, status);
 
-        this.logger.log(`🔄 Suscripción ${subscriptionId} actualizada → status=${status}`);
+        this.logger.log(`Suscripción ${subscriptionId} actualizada → status=${status}`);
     }
+
+
 
     private mapStatus(mpStatus: string): PaymentStatus {
         switch (mpStatus) {
-            case 'processed':
             case 'approved':
+            case 'accredited':
                 return PaymentStatus.APPROVED;
+
+            case 'pending':
+            case 'in_process':
+            case 'in_mediation':
+                return PaymentStatus.PENDING;
+
             case 'cancelled':
             case 'rejected':
+            case 'refused':
                 return PaymentStatus.FAILED;
-            case 'pending':
+
+            case 'refunded':
+            case 'charged_back':
+                return PaymentStatus.REFUNDED;
             default:
                 return PaymentStatus.PENDING;
         }

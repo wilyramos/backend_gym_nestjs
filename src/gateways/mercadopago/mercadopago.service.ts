@@ -50,9 +50,6 @@ export class MercadoPagoService {
     // Create subscription (Recurring payment) Preapproval
     async createSubscription(planName: string, frequency: number, amount: number, email: string, subscriptionId?: number) {
 
-        
-        console.log('TOKEN:', process.env.MERCADOPAGO_ACCESS_TOKEN);
-        console.log("Creando CON EL TOKEN:", MP_CONFIG.TOKEN);
         try {
             console.log("Creando suscripción en MP con:", { planName, frequency, amount });
             const { data } = await this.api.post('/preapproval', {

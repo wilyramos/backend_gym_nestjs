@@ -29,10 +29,12 @@ export class PaymentsService {
             throw new NotFoundException(`Subscription ${subscriptionId} not found`);
         }
 
+        console.log("Creating payment with data:", data);
+
         const payment = this.paymentsRepo.create({
             ...data,
             subscription,
-            status: PaymentStatus.PENDING,
+            status: data.status || PaymentStatus.PENDING,
         });
 
         return this.paymentsRepo.save(payment);
@@ -90,8 +92,8 @@ export class PaymentsService {
         return payments;
     }
 
-    /** 🚀 NUEVO: Crear una suscripción con MercadoPago */
-    async createSubscription(subscriptionId: number) {
+    /** Crear una suscripción con MercadoPago */
+    async activateSubscriptionInGateway(subscriptionId: number) {
 
         const subscription = await this.subscriptionsRepo.findOne({
             where: { id: subscriptionId },
@@ -132,39 +134,28 @@ export class PaymentsService {
         await this.subscriptionsRepo.save(subscription);
 
         // Guardar el pago inicial como PENDING
-        const payment = this.paymentsRepo.create({
-            subscription,
-            status: PaymentStatus.PENDING,
-            // externalId: 
-            amount,
-        });
+        // const payment = this.paymentsRepo.create({
+        //     subscription,
+        //     status: PaymentStatus.PENDING,
+        //     // externalId: 
+        //     amount,
+        // });
 
-        await this.paymentsRepo.save(payment);
+        // await this.paymentsRepo.save(payment);
 
         return {
             mpResponse,
-            payment,
+            // payment,
         };
     }
 
-    async updateStatusFromMercadoPago(payload: any) {
-        const { id, status } = payload;
-
-
-        const payment = await this.paymentsRepo.findOne({ where: { externalId: id } });
-        if (!payment) throw new NotFoundException(`Payment with externalId ${id} not found`);
-
-        payment.status = status;
-        await this.paymentsRepo.save(payment);
-        return payment;
-    }
 
     async updateStatusByExternalId(externalId: string, status: PaymentStatus) {
         const payment = await this.paymentsRepo.findOne({ where: { externalId } });
 
         if (!payment) {
-            // 🔎 No existe → no lanzamos excepción, solo loggeamos
-            this.logger?.warn?.(`⚠️ Payment con externalId=${externalId} no encontrado para actualizar`);
+            // No existe → no lanzamos excepción, solo loggeamos
+            this.logger?.warn?.(`Payment con externalId=${externalId} no encontrado para actualizar`);
             return null;
         }
 
@@ -173,6 +164,7 @@ export class PaymentsService {
     }
 
     async findByGatewayPaymentId(externalId: string): Promise<Payment | null> {
+        console.log("Buscando pago con externalId:", externalId);
         return this.paymentsRepo.findOne({ where: { externalId } }) ?? null;
     }
 

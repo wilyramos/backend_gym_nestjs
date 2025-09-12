@@ -77,8 +77,8 @@ export class MembershipsService {
             membership.status = MembershipStatus.ACTIVE;
         } else {
             membership = this.membershipsRepo.create({
-                user: { id: userId } as any,
-                subscription: { id: subscriptionId } as any,
+                user: { id: userId },
+                subscription: { id: subscriptionId },
                 status: MembershipStatus.ACTIVE,
                 validFrom: now,
                 validTo: addDays(now, durationInDays),

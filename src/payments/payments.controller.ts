@@ -59,12 +59,12 @@ export class PaymentsController {
         return this.paymentsService.findByUser(req.user.id);
     }
 
-    // ---- 🚀 SUSCRIPCIONES ----
-    @Post(':subscriptionId/subscription')
+    // ---- SUSCRIPCIONES RECURRENTES ----
+    @Post(':subscriptionId/activate')
     createSubscription(
         @Param('subscriptionId') subscriptionId: number,
     ) {
-        return this.paymentsService.createSubscription(
+        return this.paymentsService.activateSubscriptionInGateway(
             subscriptionId
         );
     }
