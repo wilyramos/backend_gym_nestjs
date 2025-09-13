@@ -5,6 +5,7 @@ import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { MembershipsService } from '../memberships/memberships.service';
 import { MercadoPagoPaymentsService } from '../payments/mercadopago-payments.service';
 import { PaymentStatus } from 'src/payments/entities/payment.entity';
+import { SubscriptionStatus } from 'src/subscriptions/entities/subscription.entity';
 
 @Injectable()
 export class WebhooksService {
@@ -83,6 +84,13 @@ export class WebhooksService {
 
         // Si aprobado → activar/renovar membresía
         if (status === 'approved' || status === 'processed') {
+
+            // Actualizar estado suscripción si estaba pausada o cancelada
+            await this.subscriptionsService.update(subscription.id, {
+                status: SubscriptionStatus.ACTIVE,
+                plan: subscription.plan,
+            });
+
             await this.membershipsService.createOrUpdateMembership({
                 userId: subscription.user.id,
                 subscriptionId: subscription.id,

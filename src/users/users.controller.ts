@@ -21,7 +21,6 @@ export class UsersController {
 
     @Get('me') // Colocada antes de :id
     getMe(@Request() req) {
-        console.log('Usuario logueado:', req.user);
         return this.usersService.getUser(req.user.id);
     }
 

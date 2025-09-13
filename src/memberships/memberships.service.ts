@@ -39,6 +39,7 @@ export class MembershipsService {
         return await this.membershipsRepo.find({
             where: { user: { id: userId } },
             relations: ['subscription'],
+            order: { validTo: 'DESC' },
         });
     }
 

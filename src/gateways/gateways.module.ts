@@ -5,4 +5,4 @@ import { MercadoPagoService } from './mercadopago/mercadopago.service';
   providers: [MercadoPagoService],
   exports: [MercadoPagoService],
 })
-export class GatewaysModule {}
+export class GatewaysModule { }

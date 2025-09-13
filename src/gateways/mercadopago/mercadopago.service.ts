@@ -5,7 +5,6 @@ import { MP_CONFIG } from '../../config/mercadopago.config';
 @Injectable()
 export class MercadoPagoService {
 
-    
     private readonly api = axios.create({
         baseURL: MP_CONFIG.BASE_URL,
         headers: {
@@ -17,8 +16,6 @@ export class MercadoPagoService {
 
     // Create preferencea (Unique payment)
     async createPreference(orderId: number, amount: number, description: string) {
-
-
         try {
             const { data } = await this.api.post('/checkout/preferences', {
                 items: [
@@ -51,7 +48,6 @@ export class MercadoPagoService {
     async createSubscription(planName: string, frequency: number, amount: number, email: string, subscriptionId?: number) {
 
         try {
-            console.log("Creando suscripción en MP con:", { planName, frequency, amount });
             const { data } = await this.api.post('/preapproval', {
                 reason: planName,
                 auto_recurring: {
@@ -67,11 +63,26 @@ export class MercadoPagoService {
                 payer_email: email,
                 external_reference: subscriptionId ? String(subscriptionId) : undefined,
             });
-            console.log("Respuesta de MP al crear suscripción:", data);
             return data;
         } catch (error) {
             throw new HttpException(
                 error.response?.data || 'Error creando suscripción',
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+    }
+
+    // Cancel subscription
+    async cancelSubscription(preapprovalId: string) {
+        try {
+            const { data } = await this.api.put(`/preapproval/${preapprovalId}`, {
+                status: 'cancelled',
+            });
+            console.log("Cancel subscription response:", data);
+            return data;
+        } catch (error) {
+            throw new HttpException(
+                error.response?.data || 'Error cancelando suscripción',
                 HttpStatus.BAD_REQUEST,
             );
         }

@@ -13,6 +13,7 @@ import { User } from '../users/entities/user.entity';
 import { Membership, MembershipStatus } from '../memberships/entities/membership.entity';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
+import { MercadoPagoService } from '../gateways/mercadopago/mercadopago.service';
 
 @Injectable()
 export class SubscriptionsService {
@@ -25,6 +26,8 @@ export class SubscriptionsService {
 
         @InjectRepository(Membership)
         private readonly membershipsRepo: Repository<Membership>,
+
+        private readonly mercadoPagoService: MercadoPagoService,
     ) { }
 
     /** -------------------
@@ -93,15 +96,15 @@ export class SubscriptionsService {
     async update(id: number, dto: UpdateSubscriptionDto) {
         const subscription = await this.findOne(id);
 
-        if (dto.plan) {
+        if (dto.plan && subscription.membership) {
             subscription.plan = dto.plan;
-            // recalcular fecha fin si se cambia plan
-            if (subscription.membership) {
-                subscription.membership.validTo = this.calculateEndDate(
-                    subscription.membership.validFrom,
-                    dto.plan,
-                );
-            }
+            subscription.membership.validTo = this.calculateEndDate(
+                subscription.membership.validFrom,
+                dto.plan,
+            );
+
+            // guarda primero la membership actualizada
+            await this.membershipsRepo.save(subscription.membership);
         }
 
         if (dto.status) {
@@ -138,11 +141,45 @@ export class SubscriptionsService {
     }
 
     /** -------------------
+     * Cancelar suscripción
+     * ------------------- */
+
+    async cancelSubscriptionByUser(userId: number) {
+
+        const subscription = await this.subscriptionsRepo.findOne({
+            where: { user: { id: userId }, status: SubscriptionStatus.ACTIVE },
+            relations: ['user', 'membership'],
+        });
+
+        if (!subscription) {
+            throw new NotFoundException(`No active subscription found for user ${userId}`);
+        }
+
+        subscription.status = SubscriptionStatus.CANCELED;
+        if (subscription.membership) {
+            subscription.membership.status = MembershipStatus.PAUSED;
+            await this.membershipsRepo.save(subscription.membership);
+        }
+
+        await this.subscriptionsRepo.save(subscription);
+
+        // Cancelar en el gateway de pago si es posible
+        if (subscription.externalId) {
+            try {
+                await this.mercadoPagoService.cancelSubscription(subscription.externalId);
+            } catch (error) {
+                console.error(`Failed to cancel subscription in payment gateway: ${error.message}`);
+            }
+        }
+
+        return { message: 'Subscription canceled successfully' };
+    }
+
+    /** -------------------
      * Helpers
      * ------------------- */
     private calculateEndDate(startDate: Date, plan: SubscriptionPlan): Date {
 
-        console.log("starttt y plan", startDate, plan);
         const endDate = new Date(startDate);
         if (plan === SubscriptionPlan.MONTHLY) {
             endDate.setMonth(endDate.getMonth() + 1);
@@ -155,8 +192,4 @@ export class SubscriptionsService {
         console.log("end", endDate);
         return endDate;
     }
-
-
-
-
 }

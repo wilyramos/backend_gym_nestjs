@@ -61,4 +61,14 @@ export class SubscriptionsController {
     remove(@Param('id', ParseIntPipe) id: number) {
         return this.subscriptionsService.remove(id);
     }
+
+    /** -------------------
+     * Cancelar mi suscripción
+     * ------------------- */
+    @UseGuards(JwtAuthGuard)
+    @Post('cancel/me')
+    async cancelMySubscription(@Request() req) {
+        const userId = req.user.id;
+        return this.subscriptionsService.cancelSubscriptionByUser(userId);
+    }
 }
