@@ -2,7 +2,6 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Re
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import type { QueryUsersDto } from './dto/get-users-query.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard.ts';
@@ -41,6 +40,22 @@ export class UsersController {
         return this.usersService.findAll({ page: pageNumber, limit: limitNumber, search });
     }
 
+    // Change password endpoint
+    @Post('change-password')
+    changePassword(@Request() req, @Body() body: { currentPassword: string; newPassword: string }) {
+        const userId = req.user.id;
+        const { currentPassword, newPassword } = body;
+        return this.usersService.changePassword(userId, currentPassword, newPassword);
+    }
+
+    // Verify password
+    @Post('verify-password')
+    verifyPassword(@Request() req, @Body() body: { password: string }) {
+        const userId = req.user.id;
+        const { password } = body;
+        return this.usersService.verifyPassword(userId, password);
+    }
+
     @Get(':id') // rutas dinámicas van al final
     @Roles('ADMIN', 'CLIENT')
     findOne(@Param('id') id: string) {
@@ -58,6 +73,4 @@ export class UsersController {
     remove(@Param('id') id: string) {
         return this.usersService.remove(+id);
     }
-
-    
 }

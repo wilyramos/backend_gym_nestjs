@@ -175,6 +175,48 @@ export class SubscriptionsService {
         return { message: 'Subscription canceled successfully' };
     }
 
+    // obtener la suscripcion del usuario
+
+    /** -------------------
+     * Obtener suscripción
+     * ------------------- */
+    async getSubscriptionCardInfo(userId: number) {
+        const subscription = await this.subscriptionsRepo.findOne({
+            where: { user: { id: userId }, status: SubscriptionStatus.ACTIVE },
+            relations: ['user', 'membership'],
+        });
+
+        if (!subscription) {
+            throw new NotFoundException(`No active subscription found for user ${userId}`);
+        }
+
+        if (!subscription.externalId) {
+            return {
+                ...subscription,
+                card: null, // no hay info si no existe preapprovalId en MP
+            };
+        }
+
+        // Llamada a MercadoPago
+        const preapproval = await this.mercadoPagoService.getSubscription(subscription.externalId);
+
+        // Extraer datos de tarjeta si existen
+        const cardInfo = preapproval?.payer?.card
+            ? {
+                brand: preapproval.payer.card.payment_method_id, // ej: visa, mastercard
+                last4: preapproval.payer.card.last_four_digits,
+                expMonth: preapproval.payer.card.expiration_month,
+                expYear: preapproval.payer.card.expiration_year,
+            }
+            : null;
+
+        return {
+            ...subscription,
+            card: cardInfo,
+        };
+    }
+
+
     /** -------------------
      * Helpers
      * ------------------- */

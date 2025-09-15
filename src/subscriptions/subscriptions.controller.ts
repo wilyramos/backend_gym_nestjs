@@ -71,4 +71,14 @@ export class SubscriptionsController {
         const userId = req.user.id;
         return this.subscriptionsService.cancelSubscriptionByUser(userId);
     }
+
+    /** -------------------
+     * Obtener datos de card de mi suscripción
+     * ------------------- */
+    @UseGuards(JwtAuthGuard)
+    @Get('card/data')
+    async getSubscriptionCardInfo(@Request() req) {
+        const userId = req.user.id;
+        return this.subscriptionsService.getSubscriptionCardInfo(userId);
+    }
 }

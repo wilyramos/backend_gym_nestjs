@@ -59,7 +59,7 @@ export class MercadoPagoService {
                     end_date: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
                 },
 
-                back_url: process.env.MP_BACK_URL || 'http://localhost:3000/subscription/success',
+                back_url: process.env.MP_BACK_URL || 'https://gogym-pink.vercel.app/subscription/success',
                 payer_email: email,
                 external_reference: subscriptionId ? String(subscriptionId) : undefined,
             });
@@ -83,6 +83,18 @@ export class MercadoPagoService {
         } catch (error) {
             throw new HttpException(
                 error.response?.data || 'Error cancelando suscripción',
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+    }
+
+    async getSubscription(preapprovalId: string) {
+        try {
+            const { data } = await this.api.get(`/preapproval/${preapprovalId}`);
+            return data;
+        } catch (error) {
+            throw new HttpException(
+                error.response?.data || 'Error obteniendo suscripción',
                 HttpStatus.BAD_REQUEST,
             );
         }

@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -102,9 +102,46 @@ export class UsersService {
         return this.usersRepository.findOne({ where: { email } });
     }
 
-    async getUser(id: number){
+    async getUser(id: number) {
         return this.usersRepository.findOne({
             where: { id },
         });
+    }
+
+    async changePassword(userId: number, currentPassword: string, newPassword: string) {
+        const user = await this.usersRepository.findOne({
+            where: { id: userId },
+            select: ['id', 'password'], // incluir password
+        });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+        if (!user.password) {
+            throw new BadRequestException('User does not have a local password set');
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            throw new BadRequestException('Current password is incorrect');
+        }
+        user.password = await bcrypt.hash(newPassword, 10);
+        return this.usersRepository.save(user);
+    }
+
+    async verifyPassword(userId: number, password: string) {
+        const user = await this.usersRepository.findOne({
+            where: { id: userId },
+            select: ['id', 'password'], // incluir password
+        });
+
+        if (!user || !user.password) {
+            throw new NotFoundException('User not found or does not have a local password set');
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            throw new UnauthorizedException('Incorrect password');
+        }
+
+        return true;
     }
 }
