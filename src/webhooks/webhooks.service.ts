@@ -60,7 +60,6 @@ export class WebhooksService {
             this.logger.error(`No se encontró la suscripción con id=${subscriptionId}`);
             return;
         }
-
         // Registrar o actualizar el pago
         let payment = await this.paymentsService.findByGatewayPaymentId(mpPaymentId);
 

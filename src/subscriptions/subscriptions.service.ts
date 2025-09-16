@@ -200,15 +200,17 @@ export class SubscriptionsService {
         // Llamada a MercadoPago
         const preapproval = await this.mercadoPagoService.getSubscription(subscription.externalId);
 
+        console.log("Preapproval info from MercadoPago:", preapproval);
         // Extraer datos de tarjeta si existen
-        const cardInfo = preapproval?.payer?.card
+        const cardInfo = preapproval.card_id
             ? {
-                brand: preapproval.payer.card.payment_method_id, // ej: visa, mastercard
-                last4: preapproval.payer.card.last_four_digits,
-                expMonth: preapproval.payer.card.expiration_month,
-                expYear: preapproval.payer.card.expiration_year,
+                brand: preapproval.payment_method_id, // ej: 'master'
+                cardId: preapproval.card_id,          // id interno
+                // No hay last4 ni expiración en esta respuesta
             }
             : null;
+
+        console.log("Card info extracted:", cardInfo);
 
         return {
             ...subscription,

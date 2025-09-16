@@ -56,7 +56,7 @@ export class Payment {
     paymentDate: Date;
 
     @Index()
-    @Column({ nullable: true })
+    @Column({ nullable: true , unique: true})
     externalId: string; // id del pago en la pasarela
 
     //TODO: cambiar a PaymentGatewayID

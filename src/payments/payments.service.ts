@@ -29,8 +29,6 @@ export class PaymentsService {
             throw new NotFoundException(`Subscription ${subscriptionId} not found`);
         }
 
-        console.log("Creating payment with data:", data);
-
         const payment = this.paymentsRepo.create({
             ...data,
             subscription,

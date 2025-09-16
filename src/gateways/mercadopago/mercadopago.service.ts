@@ -48,23 +48,39 @@ export class MercadoPagoService {
     async createSubscription(planName: string, frequency: number, amount: number, email: string, subscriptionId?: number) {
 
         try {
+            console.log("Creating subscription with:", { planName, frequency, amount, email, subscriptionId });
+            const start = new Date();
+            start.setMinutes(start.getMinutes() + 5);
+
+            const auto_recurring = {
+                frequency,
+                frequency_type: 'months',
+                transaction_amount: amount,
+                currency_id: 'PEN',
+                start_date: start.toISOString(),
+                // end_date: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+            };
+
+            console.log(JSON.stringify({
+                reason: planName,
+                auto_recurring,
+                back_url: process.env.MP_BACK_URL,
+                payer_email: email,
+                external_reference: subscriptionId?.toString(),
+            }, null, 2));
+
             const { data } = await this.api.post('/preapproval', {
                 reason: planName,
-                auto_recurring: {
-                    frequency,
-                    frequency_type: 'months',
-                    transaction_amount: amount,
-                    currency_id: 'PEN',
-                    start_date: new Date().toISOString(),
-                    end_date: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-                },
-
-                back_url: process.env.MP_BACK_URL || 'https://gogym-pink.vercel.app/subscription/success',
+                auto_recurring,
+                back_url: process.env.MP_BACK_URL || 'http://localhost:3000/memberships',
                 payer_email: email,
                 external_reference: subscriptionId ? String(subscriptionId) : undefined,
             });
+            console.log("Create subscription response:", data?.response);
+            
             return data;
         } catch (error) {
+            console.error("Error creating subscription:", error);
             throw new HttpException(
                 error.response?.data || 'Error creando suscripción',
                 HttpStatus.BAD_REQUEST,
