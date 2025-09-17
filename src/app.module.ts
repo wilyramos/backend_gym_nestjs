@@ -13,6 +13,7 @@ import { typeOrmConfig } from './config/typeorm.config';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { GatewaysModule } from './gateways/gateways.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
     imports: [
@@ -32,6 +33,7 @@ import { GatewaysModule } from './gateways/gateways.module';
         SubscriptionsModule,
         WebhooksModule,
         GatewaysModule,
+        ReportsModule,
     ],
     controllers: [AppController],
     providers: [AppService],
