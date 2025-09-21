@@ -144,4 +144,40 @@ export class UsersService {
 
         return true;
     }
+
+    async findAllWithLastMembership(query: { page?: number; limit?: number; search?: string }) {
+        const { page = 1, limit = 10, search } = query;
+        const skip = (page - 1) * limit;
+
+        const qb = this.usersRepository
+            .createQueryBuilder('user')
+            .leftJoinAndSelect('user.memberships', 'membership')
+            .orderBy('user.id', 'DESC')
+            .take(limit)
+            .skip(skip);
+
+        if (search) {
+            qb.andWhere('(user.name ILIKE :search OR user.email ILIKE :search)', {
+                search: `%${search}%`,
+            });
+        }
+
+        const [users, total] = await qb.getManyAndCount();
+
+        const data = users.map(user => ({
+            ...user,
+            memberships: user.memberships
+                .sort((a, b) => b.validFrom.getTime() - a.validFrom.getTime())
+                .slice(0, 1),
+        }));
+
+        return {
+            data,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+
 }

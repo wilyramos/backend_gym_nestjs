@@ -10,7 +10,8 @@ import {
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { Payment } from './entities/payment.entity';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('payments')
 export class PaymentsController {
@@ -57,6 +58,13 @@ export class PaymentsController {
     @Get('me/history')
     findMyPayments(@Request() req) {
         return this.paymentsService.findByUser(req.user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get("user/:userId/history")
+    @Roles('ADMIN')
+    findUserPayments(@Param("userId") userId: number) {
+        return this.paymentsService.findByUser(userId);
     }
 
     // ---- SUSCRIPCIONES RECURRENTES ----

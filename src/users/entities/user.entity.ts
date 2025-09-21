@@ -52,9 +52,6 @@ export class User {
     @Column({ type: 'varchar', nullable: true, unique: true })
     googleId: string | null;
 
-
-
-
     // Relations
     @OneToMany(() => Subscription, (sub) => sub.user)
     subscriptions: Subscription[];

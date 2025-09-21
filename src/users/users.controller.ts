@@ -39,6 +39,17 @@ export class UsersController {
         return this.usersService.findAll({ page: pageNumber, limit: limitNumber, search });
     }
 
+    @Get('with-memberships')
+    @Roles('ADMIN')
+    findAllWithMemberships(
+        @Query('page') page: string,
+        @Query('limit') limit: string,
+    ) {
+        const pageNumber = Number(page) || 1;
+        const limitNumber = Number(limit) || 10;
+        return this.usersService.findAllWithLastMembership({ page: pageNumber, limit: limitNumber });
+    }
+
     // Change password endpoint
     @Post('change-password')
     changePassword(@Request() req, @Body() body: { currentPassword: string; newPassword: string }) {
